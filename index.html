@@ -1374,25 +1374,23 @@
         });
       });
 
-      const sorted = Object.values(playerScores).sort((a, b) => b.points - a.points || b.exact - a.exact);
-      
-      let html = '';
-      sorted.forEach((p, idx) => {
-        html += `
-          <div class="leaderboard-item">
-            <div class="rank-badge">${idx + 1}</div>
-            <div class="player-info">
-              <div class="player-name">${p.name}</div>
-              <div class="player-stats">Tam İsabet: ${p.exact} | Maç Sonucu: ${p.outcome}</div>
-            </div>
-            <div class="player-score">${p.points} Puan</div>
-          </div>`;
-      });
-      
-      const listContainer = document.getElementById('leaderboard-list');
-      if (listContainer) {
-         listContainer.innerHTML = html || '<div class="empty-state">Henüz oyuncu yok.</div>';
-      }
+      const listContainer = document.getElementById('leaderboard-list');
+      if (listContainer) {
+          listContainer.innerHTML = html || '<div class="empty-state">Henüz oyuncu yok.</div>';
+      }
+      
+      const registeredPlayersCount = Object.keys(appData.players).filter(uid => appData.players[uid].name !== "Admin").length;
+      document.getElementById('stat-players').textContent = registeredPlayersCount;
+      document.getElementById('stat-matches').textContent = Object.keys(appData.results).length;
+      
+      let totalPreds = 0;
+      Object.keys(appData.predictions).forEach(uid => {
+        if (appData.players[uid] && appData.players[uid].name !== "Admin") {
+          totalPreds += Object.keys(appData.predictions[uid]).length;
+        }
+      });
+      document.getElementById('stat-predictions').textContent = totalPreds;
+    } 
       
       const registeredPlayersCount = Object.keys(appData.players).filter(uid => appData.players[uid].name !== "Admin").length;
       document.getElementById('stat-players').textContent = registeredPlayersCount;
