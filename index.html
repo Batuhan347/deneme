@@ -1075,292 +1075,293 @@
     ];
 
     // ==================== AUTH FUNCTIONS ====================
-    function switchTab(e, form) {
-      document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
-      document.querySelectorAll('.login-tab').forEach(b => b.classList.remove('active'));
-      document.getElementById(form).classList.add('active');
-      e.target.classList.add('active');
-    }
+   // ==================== AUTH FUNCTIONS ====================
+    function switchTab(e, form) {
+      document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
+      document.querySelectorAll('.login-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(form).classList.add('active');
+      e.target.classList.add('active');
+    }
 
-    function registerPlayer() {
-      const name = document.getElementById('register-name').value.trim();
-      const pass = document.getElementById('register-pass').value;
-      const pass2 = document.getElementById('register-pass2').value;
+    function registerPlayer() {
+      const name = document.getElementById('register-name').value.trim();
+      const pass = document.getElementById('register-pass').value;
+      const pass2 = document.getElementById('register-pass2').value;
 
-      if (!name || !pass || !pass2) {
-        document.getElementById('register-error').textContent = 'Tüm alanları doldurun';
-        return;
-      }
-      if (pass.length < 6) {
-        document.getElementById('register-error').textContent = 'Şifre en az 6 karakter olmalı';
-        return;
-      }
-      if (pass !== pass2) {
-        document.getElementById('register-error').textContent = 'Şifreler uyuşmuyor';
-        return;
-      }
+      if (!name || !pass || !pass2) {
+        document.getElementById('register-error').textContent = 'Tüm alanları doldurun';
+        return;
+      }
+      if (pass.length < 6) {
+        document.getElementById('register-error').textContent = 'Şifre en az 6 karakter olmalı';
+        return;
+      }
+      if (pass !== pass2) {
+        document.getElementById('register-error').textContent = 'Şifreler uyuşmuyor';
+        return;
+      }
 
-      const uid = Math.random().toString(36).slice(2);
-      database.ref('users/' + uid).set({
-        name: name,
-        pass: pass
-      }).then(() => {
-        document.getElementById('register-error').textContent = '✅ Kayıt başarılı! Lütfen giriş yapın.';
-        setTimeout(() => {
-          document.getElementById('register-name').value = '';
-          document.getElementById('register-pass').value = '';
-          document.getElementById('register-pass2').value = '';
-          document.getElementById('register-error').textContent = '';
-          switchTab({target: document.querySelector('.login-tab')}, 'login-form');
-        }, 1500);
-      }).catch(err => {
-        document.getElementById('register-error').textContent = '❌ Hata: ' + err.message;
-      });
-    }
+      const uid = Math.random().toString(36).slice(2);
+      database.ref('users/' + uid).set({
+        name: name,
+        pass: pass
+      }).then(() => {
+        document.getElementById('register-error').textContent = '✅ Kayıt başarılı! Lütfen giriş yapın.';
+        setTimeout(() => {
+          document.getElementById('register-name').value = '';
+          document.getElementById('register-pass').value = '';
+          document.getElementById('register-pass2').value = '';
+          document.getElementById('register-error').textContent = '';
+          switchTab({target: document.querySelector('.login-tab')}, 'login-form');
+        }, 1500);
+      }).catch(err => {
+        document.getElementById('register-error').textContent = '❌ Hata: ' + err.message;
+      });
+    }
 
-    function playerLogin() {
-      const name = document.getElementById('login-name').value.trim();
-      const pass = document.getElementById('login-pass').value;
+    function playerLogin() {
+      const name = document.getElementById('login-name').value.trim();
+      const pass = document.getElementById('login-pass').value;
 
-      if (!name || !pass) {
-        document.getElementById('login-error').textContent = 'Adı ve şifreyi girin';
-        return;
-      }
+      if (!name || !pass) {
+        document.getElementById('login-error').textContent = 'Adı ve şifreyi girin';
+        return;
+      }
 
-      database.ref('users').orderByChild('name').equalTo(name).once('value', snapshot => {
-        if (!snapshot.exists()) {
-          document.getElementById('login-error').textContent = 'Oyuncu bulunamadı';
-          return;
-        }
+      database.ref('users').orderByChild('name').equalTo(name).once('value', snapshot => {
+        if (!snapshot.exists()) {
+          document.getElementById('login-error').textContent = 'Oyuncu bulunamadı';
+          return;
+        }
 
-        let found = false;
-        snapshot.forEach(child => {
-          if (child.val().pass === pass) {
-            currentUser = {
-              id: child.key,
-              name: name
-            };
-            found = true;
-          }
-        });
-
-        if (!found) {
-          document.getElementById('login-error').textContent = 'Şifre yanlış';
-          return;
-        }
-
-document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        document.getElementById('current-user').textContent = currentUser.name;
-        
-        // Admin kontrolü
-        if (currentUser.name === "Admin") {
-          document.getElementById('admin-tab-btn').style.display = "block";
-        } else {
-          document.getElementById('admin-tab-btn').style.display = "none";
-        }
-        
-        loadData();
-      }).catch(err => {
-        document.getElementById('login-error').textContent = '❌ Hata: ' + err.message;
-      });
-    }
-
-    function logout() {
-      currentUser = null;
-      document.getElementById('login-screen').style.display = 'flex';
-      document.getElementById('main-app').style.display = 'none';
-      document.getElementById('login-name').value = '';
-      document.getElementById('login-pass').value = '';
-    }
-function renderLeaderboard() {
-  const leaderboardBody = document.getElementById('leaderboard-body');
-  if (!leaderboardBody) return;
-
-  let playersStats = [];
-
-  Object.keys(appData.players).forEach(uid => {
-    const player = appData.players[uid];
-    if (player.name === "Admin") return;
-
-    let oynanan = 0;
-    let dogruTahmin = 0;
-    let kazananBeraberlik = 0;
-    let bilemedi = 0;
-    let toplamPuan = 0;
-
-    if (appData.predictions && appData.predictions[uid]) {
-      const userPreds = appData.predictions[uid];
-
-      Object.keys(userPreds).forEach(mid => {
-        const pred = userPreds[mid];
-        if (appData.results && appData.results[mid]) {
-          const res = appData.results[mid];
-          
-          if (res.hScore === undefined || res.aScore === undefined || pred.hScore === '' || pred.aScore === '') return;
-
-          oynanen++;
-          const rH = parseInt(res.hScore);
-          const rA = parseInt(res.aScore);
-          const pH = parseInt(pred.hScore);
-          const pA = parseInt(pred.aScore);
-
-          const realOutcome = rH > rA ? 1 : (rH < rA ? 2 : 0);
-          const predOutcome = pH > pA ? 1 : (pH < pA ? 2 : 0);
-
-          if (rH === pH && rA === pA) {
-            dogruTahmin++;
-            toplamPuan += 3; 
-          } else if (realOutcome === predOutcome) {
-            kazananBeraberlik++;
-            toplamPuan += 1; 
-          } else {
-            bilemedi++;
+        let found = false;
+        snapshot.forEach(child => {
+          if (child.val().pass === pass) {
+            currentUser = {
+              id: child.key,
+              name: name
+            };
+            found = true;
           }
+        });
+
+        if (!found) {
+          document.getElementById('login-error').textContent = 'Şifre yanlış';
+          return;
+        }
+
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        document.getElementById('current-user').textContent = currentUser.name;
+        
+        // Admin kontrolü
+        if (currentUser.name === "Admin") {
+          document.getElementById('admin-tab-btn').style.display = "block";
+        } else {
+          document.getElementById('admin-tab-btn').style.display = "none";
+        }
+        
+        loadData();
+      }).catch(err => {
+        document.getElementById('login-error').textContent = '❌ Hata: ' + err.message;
+      });
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+      document.getElementById('login-name').value = '';
+      document.getElementById('login-pass').value = '';
+    }
+
+    function renderLeaderboard() {
+      const leaderboardBody = document.getElementById('leaderboard-body');
+      if (!leaderboardBody) return;
+
+      let playersStats = [];
+
+      Object.keys(appData.players).forEach(uid => {
+        const player = appData.players[uid];
+        if (player.name === "Admin") return;
+
+        let oynanan = 0;
+        let dogruTahmin = 0;
+        let kazananBeraberlik = 0;
+        let bilemedi = 0;
+        let toplamPuan = 0;
+
+        if (appData.predictions && appData.predictions[uid]) {
+          const userPreds = appData.predictions[uid];
+
+          Object.keys(userPreds).forEach(mid => {
+            const pred = userPreds[mid];
+            if (appData.results && appData.results[mid]) {
+              const res = appData.results[mid];
+              
+              if (res.hScore === undefined || res.aScore === undefined || pred.hScore === '' || pred.aScore === '') return;
+
+              oynanen++;
+              const rH = parseInt(res.hScore);
+              const rA = parseInt(res.aScore);
+              const pH = parseInt(pred.hScore);
+              const pA = parseInt(pred.aScore);
+
+              const realOutcome = rH > rA ? 1 : (rH < rA ? 2 : 0);
+              const predOutcome = pH > pA ? 1 : (pH < pA ? 2 : 0);
+
+              if (rH === pH && rA === pA) {
+                dogruTahmin++;
+                toplamPuan += 3; 
+              } else if (realOutcome === predOutcome) {
+                kazananBeraberlik++;
+                toplamPuan += 1; 
+              } else {
+                bilemedi++;
+              }
+            }
+          });
+        }
+
+        playersStats.push({
+          name: player.name,
+          O: oynanan,
+          DT: dogruTahmin,
+          KB: kazananBeraberlik,
+          BM: bilemedi,
+          P: toplamPuan
+        });
+      });
+
+      playersStats.sort((a, b) => {
+        if (b.P !== a.P) return b.P - a.P;
+        return b.DT - a.DT; 
+      });
+
+      let html = '';
+      playersStats.forEach((p, index) => {
+        let rowStyle = '';
+        if (index === 0) rowStyle = 'style="background: rgba(234, 179, 8, 0.05);"'; 
+        
+        html += `
+          <tr ${rowStyle}>
+            <td style="text-align: center; font-weight: bold; color: var(--primary);">${index + 1}</td>
+            <td style="font-weight: 600;">${p.name}</td>
+            <td style="text-align: center;">${p.O}</td>
+            <td style="text-align: center; color: #22c55e; font-weight: bold;">${p.DT}</td>
+            <td style="text-align: center; color: var(--primary);">${p.KB}</td>
+            <td style="text-align: center; color: var(--danger);">${p.BM}</td>
+            <td style="text-align: center; font-weight: bold; color: #fff; background: rgba(255,255,255,0.03);">${p.P}</td>
+          </tr>
+        `;
+      });
+
+      leaderboardBody.innerHTML = html || '<tr><td colspan="7" style="text-align:center; color:var(--dark-muted);">Henüz kayıtlı oyuncu veya tamamlanmış maç yok.</td></tr>';
+    }
+
+    // ==================== TAB MANAGEMENT ====================
+    function switchMainTab(e, tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      e.target.classList.add('active');
+    }
+
+    function toggleAccordion(header) {
+      header.classList.toggle('active');
+      const content = header.nextElementSibling;
+      content.classList.toggle('active');
+    }
+
+    // ==================== DATA CORE & CALCULATIONS ====================
+    function loadData() {
+      database.ref().on('value', snapshot => {
+        const data = snapshot.val() || {};
+        appData.players = data.users || {};
+        appData.predictions = data.predictions || {};
+        appData.results = data.results || {};
+        
+        calculateLeaderboard();
+        renderLeaderboard(); 
+        renderGroups();
+        renderMatches();
+        renderResults();
+        if (currentUser && currentUser.name === "Admin") {
+          renderAdminPanel();
         }
       });
     }
 
-    playersStats.push({
-      name: player.name,
-      O: oynanan,
-      DT: dogruTahmin,
-      KB: kazananBeraberlik,
-      BM: bilemedi,
-      P: toplamPuan
-    });
-  });
+    function calculateLeaderboard() {
+      let playerScores = {};
+      
+      Object.keys(appData.players).forEach(uid => {
+        if (appData.players[uid].name === "Admin") return;
+        playerScores[uid] = { name: appData.players[uid].name, points: 0, exact: 0, outcome: 0 };
+      });
 
-  playersStats.sort((a, b) => {
-    if (b.P !== a.P) return b.P - a.P;
-    return b.DT - a.DT; 
-  });
+      Object.keys(appData.results).forEach(mid => {
+        const real = appData.results[mid];
+        if (real.hScore === undefined || real.aScore === undefined) return;
 
-  let html = '';
-  playersStats.forEach((p, index) => {
-    let rowStyle = '';
-    if (index === 0) rowStyle = 'style="background: rgba(234, 179, 8, 0.05);"'; 
-    
-    html += `
-      <tr ${rowStyle}>
-        <td style="text-align: center; font-weight: bold; color: var(--primary);">${index + 1}</td>
-        <td style="font-weight: 600;">${p.name}</td>
-        <td style="text-align: center;">${p.O}</td>
-        <td style="text-align: center; color: #22c55e; font-weight: bold;">${p.DT}</td>
-        <td style="text-align: center; color: var(--primary);">${p.KB}</td>
-        <td style="text-align: center; color: var(--danger);">${p.BM}</td>
-        <td style="text-align: center; font-weight: bold; color: #fff; background: rgba(255,255,255,0.03);">${p.P}</td>
-      </tr>
-    `;
-  });
+        const rH = parseInt(real.hScore);
+        const rA = parseInt(real.aScore);
+        const realOutcome = rH > rA ? 1 : (rH < rA ? 2 : 0);
 
-  leaderboardBody.innerHTML = html || '<tr><td colspan="7" style="text-align:center; color:var(--dark-muted);">Henüz kayıtlı oyuncu veya tamamlanmış maç yok.</td></tr>';
-}
+        Object.keys(appData.predictions).forEach(uid => {
+          if (!playerScores[uid]) return;
 
-// ==================== TAB MANAGEMENT ====================
-function switchMainTab(e, tabId) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
-  e.target.classList.add('active');
-}
+          const userPreds = appData.predictions[uid] || {};
+          if (userPreds[mid]) {
+            if (userPreds[mid].hScore === '' || userPreds[mid].aScore === '') return;
+            
+            const pH = parseInt(userPreds[mid].hScore);
+            const pA = parseInt(userPreds[mid].aScore);
+            const predOutcome = pH > pA ? 1 : (pH < pA ? 2 : 0);
 
-function toggleAccordion(header) {
-  header.classList.toggle('active');
-  const content = header.nextElementSibling;
-  content.classList.toggle('active');
-}
+            if (rH === pH && rA === pA) {
+              playerScores[uid].points += 3;
+              playerScores[uid].exact += 1;
+            } else if (realOutcome === predOutcome) {
+              playerScores[uid].points += 1;
+              playerScores[uid].outcome += 1;
+            }
+          }
+        });
+      });
 
-// ==================== DATA CORE & CALCULATIONS ====================
-function loadData() {
-  database.ref().on('value', snapshot => {
-    const data = snapshot.val() || {};
-    appData.players = data.users || {};
-    appData.predictions = data.predictions || {};
-    appData.results = data.results || {};
-    
-    calculateLeaderboard();
-    renderLeaderboard(); 
-    renderGroups();
-    renderMatches();
-    renderResults();
-    if (currentUser && currentUser.name === "Admin") {
-      renderAdminPanel();
-    }
-  });
-}
-
-function calculateLeaderboard() {
-  let playerScores = {};
-  
-  Object.keys(appData.players).forEach(uid => {
-    if (appData.players[uid].name === "Admin") return;
-    playerScores[uid] = { name: appData.players[uid].name, points: 0, exact: 0, outcome: 0 };
-  });
-
-  Object.keys(appData.results).forEach(mid => {
-    const real = appData.results[mid];
-    if (real.hScore === undefined || real.aScore === undefined) return;
-
-    const rH = parseInt(real.hScore);
-    const rA = parseInt(real.aScore);
-    const realOutcome = rH > rA ? 1 : (rH < rA ? 2 : 0);
-
-    Object.keys(appData.predictions).forEach(uid => {
-      if (!playerScores[uid]) return;
-
-      const userPreds = appData.predictions[uid] || {};
-      if (userPreds[mid]) {
-        if (userPreds[mid].hScore === '' || userPreds[mid].aScore === '') return;
-        
-        const pH = parseInt(userPreds[mid].hScore);
-        const pA = parseInt(userPreds[mid].aScore);
-        const predOutcome = pH > pA ? 1 : (pH < pA ? 2 : 0);
-
-        if (rH === pH && rA === pA) {
-          playerScores[uid].points += 3;
-          playerScores[uid].exact += 1;
-        } else if (realOutcome === predOutcome) {
-          playerScores[uid].points += 1;
-          playerScores[uid].outcome += 1;
-        }
+      const sorted = Object.values(playerScores).sort((a, b) => b.points - a.points || b.exact - a.exact);
+      
+      let html = '';
+      sorted.forEach((p, idx) => {
+        html += `
+          <div class="leaderboard-item">
+            <div class="rank-badge">${idx + 1}</div>
+            <div class="player-info">
+              <div class="player-name">${p.name}</div>
+              <div class="player-stats">Tam İsabet: ${p.exact} | Maç Sonucu: ${p.outcome}</div>
+            </div>
+            <div class="player-score">${p.points} Puan</div>
+          </div>`;
+      });
+      
+      const listContainer = document.getElementById('leaderboard-list');
+      if (listContainer) {
+         listContainer.innerHTML = html || '<div class="empty-state">Henüz oyuncu yok.</div>';
       }
-    });
-  });
-
-  const sorted = Object.values(playerScores).sort((a, b) => b.points - a.points || b.exact - a.exact);
-  
-  let html = '';
-  sorted.forEach((p, idx) => {
-    html += `
-      <div class="leaderboard-item">
-        <div class="rank-badge">${idx + 1}</div>
-        <div class="player-info">
-          <div class="player-name">${p.name}</div>
-          <div class="player-stats">Tam İsabet: ${p.exact} | Maç Sonucu: ${p.outcome}</div>
-        </div>
-        <div class="player-score">${p.points} Puan</div>
-      </div>`;
-  });
-  
-  const listContainer = document.getElementById('leaderboard-list');
-  if (listContainer) {
-     listContainer.innerHTML = html || '<div class="empty-state">Henüz oyuncu yok.</div>';
-  }
-  
-  const registeredPlayersCount = Object.keys(appData.players).filter(uid => appData.players[uid].name !== "Admin").length;
-  document.getElementById('stat-players').textContent = registeredPlayersCount;
-  document.getElementById('stat-matches').textContent = Object.keys(appData.results).length;
-  
-  let totalPreds = 0;
-  Object.keys(appData.predictions).forEach(uid => {
-    if (appData.players[uid] && appData.players[uid].name !== "Admin") {
-      totalPreds += Object.keys(appData.predictions[uid]).length;
+      
+      const registeredPlayersCount = Object.keys(appData.players).filter(uid => appData.players[uid].name !== "Admin").length;
+      document.getElementById('stat-players').textContent = registeredPlayersCount;
+      document.getElementById('stat-matches').textContent = Object.keys(appData.results).length;
+      
+      let totalPreds = 0;
+      Object.keys(appData.predictions).forEach(uid => {
+        if (appData.players[uid] && appData.players[uid].name !== "Admin") {
+          totalPreds += Object.keys(appData.predictions[uid]).length;
+        }
+      });
+      document.getElementById('stat-predictions').textContent = totalPreds;
     }
-  });
-  document.getElementById('stat-predictions').textContent = totalPreds;
-}
-    }
 
     // ==================== WORLD CUP GROUPS GENERATOR ====================
     function renderGroups() {
